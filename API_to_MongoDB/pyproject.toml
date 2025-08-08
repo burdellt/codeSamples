@@ -1,0 +1,11 @@
+[project]
+name = "api-to-mongodb"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "datetime>=5.5",
+    "pymongo>=4.14.0",
+    "requests>=2.32.4",
+]

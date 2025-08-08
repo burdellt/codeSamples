@@ -4,6 +4,8 @@ import requests
 import mergedocs 
 
 class MongoDBStageLoader():
+    test = 'hello'
+    
     def __init__(loader,document,year, response_path ) :
         loader.document = document
         loader.year = year
@@ -18,6 +20,7 @@ class MongoDBStageLoader():
         loader.prod_collection = loader.prod_db["sports"]
         loader.sports = loader.prod_collection.find({},{"id" : 1, "year" :1, "_id" : 0})
 
+    
 
     def api_call(loader, url:str) :
         response = requests.get(url)
@@ -144,7 +147,6 @@ class MongoDBStageLoader():
             loader.getRoots()
             print(f"{loader.document} loading completed")
 
-#obj = MongoDBStageLoader('leagues',2025,'leagues')
-#obj.loadStageDocuments()
+
 
 
