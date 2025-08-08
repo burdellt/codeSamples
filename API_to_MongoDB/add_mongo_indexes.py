@@ -5,7 +5,7 @@ import pymongo
 # Connect to MongoDB
 client = pymongo.MongoClient("mongodb://localhost:27017/")
 
-documents = ['sports_players',]
+documents = ['schedule',]
 
 
 def add_data_index(document: str) :
@@ -26,7 +26,7 @@ def add_stage_index(document: str) :
     collection.create_index([('idx', pymongo.ASCENDING)], unique=True)
 
 
-#add_data_index('sports')
-add_stage_index('seasons')
+add_data_index('schedule')
+add_stage_index('schedule')
 
 

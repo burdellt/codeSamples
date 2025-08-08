@@ -21,3 +21,5 @@ class MongoDBMerger:
         }
     }])
 
+obg = MongoDBMerger('sports')
+obg.merge()

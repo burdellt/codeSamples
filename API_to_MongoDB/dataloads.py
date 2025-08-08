@@ -30,6 +30,7 @@ class MongoDBStageLoader():
         return json_data
     
     def getSports(loader) :
+        #loader.stage_collection.delete_many({})
         records = 0
         url = f'http://statsapi.mlb.com/api/v1/sports?season={loader.year}'      
         json_data = loader.api_call(url)
@@ -65,6 +66,7 @@ class MongoDBStageLoader():
         return(records)
 
     def getSeasons(loader) :
+        #loader.stage_collection.delete_many({})
         records = 0
         sport_id = [i for i in loader.sports if i["year"] == loader.year]
         for i in sport_id :
@@ -102,7 +104,104 @@ class MongoDBStageLoader():
                     gc.collect
         return (records)
 
+    
+    def getSchedules(loader) :
+        ##loader.stage_collection.delete_many({})
+        records = 0
+        sport_id = [i for i in loader.sports if i["year"] == loader.year]
+        for i in sport_id :
+            s_id = i["id"]
+            
+            if s_id :
+                url = f'https://statsapi.mlb.com/api/v1/{loader.document}?sportId={s_id}&season={loader.year}'
+                json_data = loader.api_call(url)
+                
+                if  loader.response_path in json_data :
+                    d = json_data[loader.response_path]
+                    del json_data
+                    gc.collect
+                    
+                    
+                    if d != [] :
+                        records += len(d)
+                        loader.temp_collection.drop()
+                        loader.temp_collection.insert_many(d)
+                        
+                        loader.temp_collection.update_many({},[{"$set": {"sportId" : s_id
+                                            , "year" : loader.year, 
+                                             "idx" : {"$concat": ["I", 
+                                            "$date",
+                                            "S",
+                                            {"$toString" : s_id},
+                                            'Y',
+                                            {"$toString" : loader.year}
+                                            ]}}}])
+                        
+                                               
+                        loader.temp_collection.aggregate([
+                            {"$unset": ("_id")},  # Remove _id field to avoid conflicts
+                            {"$merge": {
+                            "into": {"db": "stg_baseball", "coll": loader.stage_doc},  # target data collection
+                            "on": "idx",
+                            "whenMatched": "replace",
+                            "whenNotMatched": "insert"
+                            }
+                            }])
+                
+                        loader.temp_collection.drop()
+                        mergedocs.MongoDBMerger(loader.document)
+                        del (d)
+                        gc.collect()
+        return (records)          
+
+    
+    def getSportsPlayers(loader) : 
+        records = 0
+        sport_id = [i for i in loader.sports if i["year"] == loader.year]
+        for i in sport_id :
+            s_id = i["id"]
+            
+            if s_id :
+                url = f'https://statsapi.mlb.com/api/v1/sports/{s_id}/players?season={loader.year}'
+                json_data = loader.api_call(url)
+                
+                if  loader.response_path in json_data :
+                    d = json_data[loader.response_path]
+                    del json_data
+                    gc.collect
+                    
+                    
+                    if d != [] :
+                        records += len(d)
+                        loader.temp_collection.drop()
+                        loader.temp_collection.insert_many(d)
+                        loader.temp_collection.update_many({},[{"$set": {"sportId" : s_id, "year" : loader.year, 
+                                             "idx" : {"$concat": ["I", 
+                                            {"$toString": "$id"},
+                                            "S",
+                                            {"$toString" : s_id},
+                                            'Y',
+                                            {"$toString" : loader.year}]}}}])
+                        
+                                               
+                        loader.temp_collection.aggregate([
+                            {"$unset": ("_id")},  # Remove _id field to avoid conflicts
+                            {"$merge": {
+                            "into": {"db": "stg_baseball", "coll": loader.stage_doc},  # target data collection
+                            "on": "idx",
+                            "whenMatched": "replace",
+                            "whenNotMatched": "insert"
+                            }
+                            }])
+                
+                        loader.temp_collection.drop()
+                        mergedocs.MongoDBMerger(loader.document)
+                        del (d)
+                        gc.collect()
+        return (records)
+
     def getRoots(loader) :
+        ##loader.stage_collection.delete_many({})
         records = 0
         sport_id = [i for i in loader.sports if i["year"] == loader.year]
         for i in sport_id :
@@ -148,9 +247,8 @@ class MongoDBStageLoader():
         return (records)          
 
     
-    
     def loadStageDocuments(loader) :
-        if loader.document in ("conferences", "divisions", "leagues", "teams") :
+        if loader.document in ("divisions", "leagues", "teams") :
             records = loader.getRoots()
             return(records)
         
@@ -158,9 +256,20 @@ class MongoDBStageLoader():
             records = loader.getSeasons()
             return(records)
         
-        else :
-            records == loader.getSports()
+        elif loader.document == 'schedule' :
+            records = loader.getSchedules()
             return(records)
+        
+        elif loader.document == 'sports_players' :
+            records = loader.getSportsPlayers()
+            return(records)
+
+        elif loader.document == 'sports' :
+            records = loader.getSports()
+            return(records)
+        
+        else :
+            print('unknown end point')
 
 
 
