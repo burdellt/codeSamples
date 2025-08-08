@@ -2,11 +2,11 @@ import dataloads
 import mergedocs
 from datetime import datetime, timezone
 import pymongo
-
+import gc
 
 client = pymongo.MongoClient("mongodb://localhost:27017/")
-prod_db = client["baseball"]       
-prod_collection = prod_db['logs']
+log_db = client["baseball"]       
+log_collection = log_db['logs']
 
 
 
@@ -35,8 +35,8 @@ def loaddocs() :
                          "run_time" : str(run_time),
                          "document_count" : records } )
             
-    prod_collection.insert_many(logs)
-    
+    log_collection.insert_many(logs)
+    del(start_time, end_time, run_time, records, logs)
 
 
 def main() :

@@ -29,13 +29,13 @@ class MongoDBStageLoader():
         gc.collect()
         return json_data
     
-    def getSports(loader,year,response_path) :
+    def getSports(loader) :
         records = 0
-        url = f'http://statsapi.mlb.com/api/v1/sports?season={year}'      
+        url = f'http://statsapi.mlb.com/api/v1/sports?season={loader.year}'      
         json_data = loader.api_call(url)
                 
-        if response_path in json_data :
-            d = json_data[response_path]
+        if loader.response_path in json_data :
+            d = json_data[loader.response_path]
             del json_data
             gc.collect
 
@@ -43,10 +43,10 @@ class MongoDBStageLoader():
                 records += len(d)
                 loader.temp_collection.drop()
                 loader.temp_collection.insert_many(d)
-                loader.temp_collection.update_many({},[{"$set": {"year" : year, "idx" : {"$concat": ["I", 
+                loader.temp_collection.update_many({},[{"$set": {"year" : loader.year, "idx" : {"$concat": ["I", 
                                                 {"$toString": "$id"},
                                                 'Y',
-                                                {"$toString" : year}]}}}])
+                                                {"$toString" : loader.year}]}}}])
                 
                 loader.temp_collection.aggregate([
                      {"$unset": ("_id")},  # Remove _id field to avoid conflicts
@@ -81,12 +81,12 @@ class MongoDBStageLoader():
                     records += len(d)
                     loader.temp_collection.drop()
                     loader.temp_collection.insert_many(d)
-                    loader.temp_collection.update_many({},[{"$set": {"sportId" : sport_id, "year" : yr,  "idx" : {"$concat": ["I", 
+                    loader.temp_collection.update_many({},[{"$set": {"sportId" : sport_id, "year" : loader.year,  "idx" : {"$concat": ["I", 
                                             {"$toString": "$seasonId"},
                                             "S",
                                             {"$toString" : sport_id},
                                             'Y',
-                                            {"$toString" : yr}]}}}])
+                                            {"$toString" : loader.year}]}}}])
                 
                     loader.temp_collection.aggregate([
                     {"$unset": ("_id")},  # Remove _id field to avoid conflicts
@@ -152,6 +152,14 @@ class MongoDBStageLoader():
     def loadStageDocuments(loader) :
         if loader.document in ("conferences", "divisions", "leagues", "teams") :
             records = loader.getRoots()
+            return(records)
+        
+        elif loader.document == 'seasons' :
+            records = loader.getSeasons()
+            return(records)
+        
+        else :
+            records == loader.getSports()
             return(records)
 
 
