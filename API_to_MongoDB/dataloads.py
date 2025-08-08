@@ -2,10 +2,10 @@ import pymongo
 import gc
 import requests
 import mergedocs 
+from datetime import datetime
 
 class MongoDBStageLoader():
-    test = 'hello'
-    
+      
     def __init__(loader,document,year, response_path ) :
         loader.document = document
         loader.year = year
@@ -20,8 +20,6 @@ class MongoDBStageLoader():
         loader.prod_collection = loader.prod_db["sports"]
         loader.sports = loader.prod_collection.find({},{"id" : 1, "year" :1, "_id" : 0})
 
-    
-
     def api_call(loader, url:str) :
         response = requests.get(url)
         json_data = response.json()
@@ -32,6 +30,7 @@ class MongoDBStageLoader():
         return json_data
     
     def getSports(loader,year,response_path) :
+        records = 0
         url = f'http://statsapi.mlb.com/api/v1/sports?season={year}'      
         json_data = loader.api_call(url)
                 
@@ -41,6 +40,7 @@ class MongoDBStageLoader():
             gc.collect
 
             if d != [] :
+                records += len(d)
                 loader.temp_collection.drop()
                 loader.temp_collection.insert_many(d)
                 loader.temp_collection.update_many({},[{"$set": {"year" : year, "idx" : {"$concat": ["I", 
@@ -62,12 +62,14 @@ class MongoDBStageLoader():
                 mergedocs.MongoDBMerger(loader.document)
                 del (d)
                 gc.collect()
+        return(records)
 
     def getSeasons(loader) :
-        for i in loader.sports :
-            sport_id = i["id"]
-            yr = i["year"]
-            url = f'http://statsapi.mlb.com/api/v1/seasons?sportId={sport_id}&season={yr}'
+        records = 0
+        sport_id = [i for i in loader.sports if i["year"] == loader.year]
+        for i in sport_id :
+            s_id = i["id"]
+            url = f'http://statsapi.mlb.com/api/v1/seasons?sportId={s_id}&season={loader.year}'
             json_data = loader.api_call(url)
                 
             if loader.response_path in json_data :
@@ -76,6 +78,7 @@ class MongoDBStageLoader():
                 gc.collect
 
                 if d != [] :
+                    records += len(d)
                     loader.temp_collection.drop()
                     loader.temp_collection.insert_many(d)
                     loader.temp_collection.update_many({},[{"$set": {"sportId" : sport_id, "year" : yr,  "idx" : {"$concat": ["I", 
@@ -97,8 +100,10 @@ class MongoDBStageLoader():
                     loader.temp_collection.drop()
                     del(d)
                     gc.collect
+        return (records)
 
     def getRoots(loader) :
+        records = 0
         sport_id = [i for i in loader.sports if i["year"] == loader.year]
         for i in sport_id :
             s_id = i["id"]
@@ -111,8 +116,10 @@ class MongoDBStageLoader():
                     d = json_data[loader.response_path]
                     del json_data
                     gc.collect
-
+                    
+                    
                     if d != [] :
+                        records += len(d)
                         loader.temp_collection.drop()
                         loader.temp_collection.insert_many(d)
                         loader.temp_collection.update_many({},[{"$set": {"sportId" : s_id, "year" : loader.year, 
@@ -138,14 +145,14 @@ class MongoDBStageLoader():
                         mergedocs.MongoDBMerger(loader.document)
                         del (d)
                         gc.collect()
+        return (records)          
 
     
     
     def loadStageDocuments(loader) :
         if loader.document in ("conferences", "divisions", "leagues", "teams") :
-            print(f"Loading {loader.document}")
-            loader.getRoots()
-            print(f"{loader.document} loading completed")
+            records = loader.getRoots()
+            return(records)
 
 
 
