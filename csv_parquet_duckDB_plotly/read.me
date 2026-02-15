@@ -1,0 +1,9 @@
+This process combines 100 csv files located in the csvFiles folder and converts them into a consolidated parquet file partitioned by purchaseYear. Each csv file contains 1,000 rows of json data giving the consolidated parquet file a total record count of 100,000 rows. Files were randomly created from https://mockaroo.com/  
+
+duckDB is used to combine the 100 csv files, 10 years are added to each car year to give them more recency and the purchase year is extracted out of the purchase date element to create the file partitions.
+
+On run, Python checks for the existance of carSales.parquet and if not exists, creates the file from the json data located in the csvFiles folder. A missing carSales.parquet file would indicate the programs first run or new data added to the csvFiles folder with the ETL process for the csvFiles having an additional step to delete carSales.parquet
+
+After verifying the existing of the parquet data the process again uses duckDB to use SQL to query carSales.parquet to extract out only the sum of revenue by automobileMake, customerRegion, customerState and purchaseMonth. The duckDB query returns as a Pandas dataframe which pivots the purchase month into columns with revenue over automobileMake and customerRegion.  The returning pivot table is passed to Plotly for table visualization and formatting and then saved as an .HTML file for consumption.
+
+This is only a simple proof of concept fully created by Todd Burdell using fake data.
