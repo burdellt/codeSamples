@@ -58,7 +58,7 @@ fig = go.Figure(data=[go.Table(
                line_color='black')
 )])
 
-fig.update_layout(title='Monthly Automobile Revenue by Make', height=600)
+fig.update_layout(title='MOCK - Monthly Automobile Revenue by Make', height=600)
                                                                            
 # Create HTML file for rendering crosstab
 fig.write_html(f'{output_path}/revenue_report.html')
